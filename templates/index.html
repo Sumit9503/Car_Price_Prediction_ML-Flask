@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Car Price Predictor</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.24.1/plotly.min.js"></script>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(
+          135deg,
+          #0c0c0c 0%,
+          #1a1a2e 25%,
+          #16213e 50%,
+          #0f3460 75%,
+          #533483 100%
+        );
+        color: #ffffff;
+        min-height: 100vh;
+        overflow-x: hidden;
+      }
+
+      .stars {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: -1;
+      }
+
+      .star {
+        position: absolute;
+        width: 2px;
+        height: 2px;
+        background: white;
+        border-radius: 50%;
+        animation: twinkle 2s infinite;
+      }
+
+      @keyframes twinkle {
+        0%,
+        100% {
+          opacity: 0.3;
+        }
+        50% {
+          opacity: 1;
+        }
+      }
+
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 0 20px;
+      }
+
+      .header {
+        text-align: center;
+        padding: 40px 0;
+        background: rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        margin-bottom: 40px;
+      }
+
+      .header h1 {
+        font-size: 3.5rem;
+        font-weight: 700;
+        background: linear-gradient(45deg, #8b5cf6, #06d6a0, #ffd23f);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 10px;
+        text-shadow: 0 0 30px rgba(139, 92, 246, 0.5);
+      }
+
+      .header p {
+        font-size: 1.2rem;
+        color: #b0b3c7;
+        margin-bottom: 20px;
+      }
+
+      .content-wrapper {
+        display: flex;
+        justify-content: center;
+        width: 100%;
+      }
+
+      .main-content {
+        display: grid;
+        grid-template-columns: 600px 1fr;
+        gap: 40px;
+        align-items: start;
+        width: 100%;
+        max-width: 1200px;
+      }
+
+      .form-section {
+        background: rgba(0, 0, 0, 0.4);
+        backdrop-filter: blur(20px);
+        border-radius: 20px;
+        padding: 25px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        /* Removed position: sticky and top to allow natural scrolling */
+      }
+
+      .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+      }
+
+      .form-group {
+        margin-bottom: 15px;
+      }
+
+      .form-group label {
+        display: block;
+        margin-bottom: 6px;
+        font-weight: 600;
+        color: #e2e8f0;
+        font-size: 14px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .form-control {
+        width: 100%;
+        padding: 10px 12px;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 12px;
+        color: white;
+        font-size: 14px;
+        transition: all 0.3s ease;
+      }
+
+      .form-control:focus {
+        outline: none;
+        border-color: #8b5cf6;
+        box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+        background: rgba(255, 255, 255, 0.15);
+      }
+
+      .form-control option {
+        background: #1a1a2e;
+        color: white;
+      }
+
+      .range-input {
+        -webkit-appearance: none;
+        appearance: none;
+        height: 6px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 3px;
+        outline: none;
+      }
+
+      .range-input::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 18px;
+        height: 18px;
+        background: linear-gradient(45deg, #8b5cf6, #06d6a0);
+        border-radius: 50%;
+        cursor: pointer;
+        box-shadow: 0 2px 10px rgba(139, 92, 246, 0.5);
+      }
+
+      .range-input::-moz-range-thumb {
+        width: 18px;
+        height: 18px;
+        background: linear-gradient(45deg, #8b5cf6, #06d6a0);
+        border-radius: 50%;
+        cursor: pointer;
+        border: none;
+        box-shadow: 0 2px 10px rgba(139, 92, 246, 0.5);
+      }
+
+      .range-value {
+        background: rgba(139, 92, 246, 0.2);
+        padding: 4px 10px;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #8b5cf6;
+        min-width: 50px;
+        text-align: center;
+      }
+
+      .predict-btn-container {
+        grid-column: 1 / -1;
+        text-align: center;
+        margin: 20px 0;
+      }
+
+      .predict-btn {
+        width: 60%;
+        padding: 14px;
+        background: linear-gradient(45deg, #8b5cf6, #06d6a0);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .predict-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 30px rgba(139, 92, 246, 0.4);
+      }
+
+      .predict-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .results-section {
+        background: rgba(0, 0, 0, 0.4);
+        backdrop-filter: blur(20px);
+        border-radius: 20px;
+        padding: 30px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        min-height: 800px;
+        visibility: hidden;
+        width: 100%;
+        max-width: 100%;
+        position: relative;
+        z-index: 1;
+      }
+
+      .results-section.full-span {
+        grid-column: 1 / -1;
+      }
+
+      .welcome-section {
+        background: rgba(0, 0, 0, 0.4);
+        backdrop-filter: blur(20px);
+        border-radius: 20px;
+        padding: 60px 40px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        text-align: center;
+        width: 100%;
+      }
+
+      .welcome-section h2 {
+        font-size: 2.5rem;
+        color: #8b5cf6;
+        margin-bottom: 20px;
+        background: linear-gradient(45deg, #8b5cf6, #06d6a0);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .welcome-section p {
+        font-size: 1.3rem;
+        color: #b0b3c7;
+        line-height: 1.6;
+        margin-bottom: 30px;
+      }
+
+      .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-top: 40px;
+      }
+
+      .feature-card {
+        background: rgba(139, 92, 246, 0.1);
+        border: 1px solid rgba(139, 92, 246, 0.3);
+        border-radius: 15px;
+        padding: 25px;
+        text-align: center;
+        transition: transform 0.3s ease;
+      }
+
+      .feature-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 30px rgba(139, 92, 246, 0.2);
+      }
+
+      .feature-card i {
+        font-size: 2.5rem;
+        color: #8b5cf6;
+        margin-bottom: 15px;
+      }
+
+      .feature-card h3 {
+        color: #06d6a0;
+        margin-bottom: 10px;
+        font-size: 1.2rem;
+      }
+
+      .feature-card p {
+        color: #b0b3c7;
+        font-size: 0.9rem;
+      }
+
+      .loading {
+        display: none;
+        text-align: center;
+        padding: 40px;
+      }
+
+      .spinner {
+        width: 50px;
+        height: 50px;
+        border: 3px solid rgba(139, 92, 246, 0.3);
+        border-top: 3px solid #8b5cf6;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 20px;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .price-result {
+        text-align: center;
+        padding: 30px;
+        background: linear-gradient(
+          45deg,
+          rgba(139, 92, 246, 0.2),
+          rgba(6, 214, 160, 0.2)
+        );
+        border-radius: 20px;
+        margin-bottom: 30px;
+        border: 1px solid rgba(139, 92, 246, 0.3);
+        position: relative;
+        z-index: 1;
+      }
+
+      .price-amount {
+        font-size: 3rem;
+        font-weight: 700;
+        color: #06d6a0;
+        margin-bottom: 10px;
+        text-shadow: 0 0 20px rgba(6, 214, 160, 0.5);
+      }
+
+      .price-label {
+        font-size: 1.1rem;
+        color: #b0b3c7;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+      }
+
+      .charts-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin-top: 40px;
+        margin-bottom: 30px;
+        position: relative;
+        z-index: 2;
+        justify-items: center;
+      }
+
+      .chart-container {
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 15px;
+        padding: 15px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        height: 250px;
+        max-width: 400px;
+        width: 100%;
+        box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+      }
+
+      .chart-full {
+        grid-column: 1 / -1;
+        max-width: 800px;
+      }
+
+      .specs-summary {
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 15px;
+        padding: 25px;
+        margin-top: 30px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        overflow: hidden;
+        position: relative;
+        z-index: 1;
+      }
+
+      .specs-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+      }
+
+      .spec-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .spec-label {
+        color: #b0b3c7;
+        font-weight: 500;
+      }
+
+      .spec-value {
+        color: #8b5cf6;
+        font-weight: 600;
+      }
+
+      .error-message {
+        background: rgba(239, 68, 68, 0.2);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        border-radius: 10px;
+        padding: 20px;
+        margin: 20px 0;
+        text-align: center;
+        color: #fecaca;
+      }
+
+      @media (max-width: 1200px) {
+        .main-content {
+          grid-template-columns: 1fr;
+          gap: 30px;
+        }
+
+        .container {
+          padding: 0 15px;
+        }
+
+        .results-section.full-span {
+          grid-column: 1 / -1;
+        }
+
+        .form-grid {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .header h1 {
+          font-size: 2.5rem;
+        }
+
+        .charts-grid {
+          grid-template-columns: 1fr;
+          margin-top: 30px;
+          margin-bottom: 20px;
+        }
+
+        .chart-container {
+          height: 230px;
+          max-width: 100%;
+        }
+
+        .chart-full {
+          max-width: 100%;
+        }
+
+        .container {
+          padding: 0 10px;
+        }
+
+        .features-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .main-content {
+          max-width: 100%;
+        }
+
+        .results-section {
+          min-height: 1000px;
+        }
+
+        .form-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .predict-btn {
+          width: 100%;
+        }
+      }
+
+      .glow-effect {
+        animation: glow 2s ease-in-out infinite alternate;
+      }
+
+      @keyframes glow {
+        from {
+          box-shadow: 0 0 20px rgba(139, 92, 246, 0.2);
+        }
+        to {
+          box-shadow: 0 0 30px rgba(139, 92, 246, 0.4);
+        }
+      }
+
+      .fade-in {
+        animation: fadeIn 0.8s ease-in;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="stars" id="stars"></div>
+
+    <div class="header">
+      <div class="container">
+        <h1><i class="fas fa-car"></i> AI Car Price Predictor</h1>
+        <p>
+          Powered by Advanced Machine Learning • Get Instant Price Predictions
+        </p>
+      </div>
+    </div>
+
+    <div class="container">
+      <div class="content-wrapper">
+        <div class="main-content">
+          <div class="form-section glow-effect" id="formSection">
+            <h2 style="margin-bottom: 20px; color: #8b5cf6">
+              <i class="fas fa-cog"></i> Car Specifications
+            </h2>
+            <form id="predictionForm">
+              <div class="form-grid">
+                <!-- First Column: 9 Inputs (Car Name added as first) -->
+                <div>
+                  <div class="form-group">
+                    <label for="carname">Car Name</label>
+                    <select id="carname" name="carname" class="form-control">
+                      <!-- Placeholder car names; replace with actual list from dataset -->
+                      <option value="Toyota Camry">Toyota Camry</option>
+                      <option value="Honda Civic">Honda Civic</option>
+                      <option value="Ford Mustang">Ford Mustang</option>
+                      <option value="Chevrolet Corvette">
+                        Chevrolet Corvette
+                      </option>
+                      <option value="BMW 3 Series">BMW 3 Series</option>
+                      <option value="Audi A4">Audi A4</option>
+                      <option value="Mercedes-Benz C-Class">
+                        Mercedes-Benz C-Class
+                      </option>
+                      <!-- Add more car names as needed -->
+                    </select>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="wheelbase">
+                      Wheelbase
+                      <span class="range-value" id="wheelbase-value">95.0</span>
+                    </label>
+                    <input
+                      type="range"
+                      id="wheelbase"
+                      name="wheelbase"
+                      min="86.6"
+                      max="120.9"
+                      step="0.1"
+                      value="95.0"
+                      class="form-control range-input"
+                    />
+                  </div>
+
+                  <div class="form-group">
+                    <label for="carlength">
+                      Car Length
+                      <span class="range-value" id="carlength-value"
+                        >175.0</span
+                      >
+                    </label>
+                    <input
+                      type="range"
+                      id="carlength"
+                      name="carlength"
+                      min="141.1"
+                      max="208.1"
+                      step="0.1"
+                      value="175.0"
+                      class="form-control range-input"
+                    />
+                  </div>
+
+                  <div class="form-group">
+                    <label for="carwidth">
+                      Car Width
+                      <span class="range-value" id="carwidth-value">65.0</span>
+                    </label>
+                    <input
+                      type="range"
+                      id="carwidth"
+                      name="carwidth"
+                      min="60.3"
+                      max="72.0"
+                      step="0.1"
+                      value="65.0"
+                      class="form-control range-input"
+                    />
+                  </div>
+
+                  <div class="form-group">
+                    <label for="carheight">
+                      Car Height
+                      <span class="range-value" id="carheight-value">54.0</span>
+                    </label>
+                    <input
+                      type="range"
+                      id="carheight"
+                      name="carheight"
+                      min="47.8"
+                      max="59.8"
+                      step="0.1"
+                      value="54.0"
+                      class="form-control range-input"
+                    />
+                  </div>
+
+                  <div class="form-group">
+                    <label for="curbweight">
+                      Curb Weight
+                      <span class="range-value" id="curbweight-value"
+                        >2500</span
+                      >
+                    </label>
+                    <input
+                      type="range"
+                      id="curbweight"
+                      name="curbweight"
+                      min="1488"
+                      max="4066"
+                      step="1"
+                      value="2500"
+                      class="form-control range-input"
+                    />
+                  </div>
+
+                  <div class="form-group">
+                    <label for="enginesize">
+                      Engine Size
+                      <span class="range-value" id="enginesize-value">150</span>
+                    </label>
+                    <input
+                      type="range"
+                      id="enginesize"
+                      name="enginesize"
+                      min="61"
+                      max="326"
+                      step="1"
+                      value="150"
+                      class="form-control range-input"
+                    />
+                  </div>
+
+                  <div class="form-group">
+                    <label for="boreratio">
+                      Bore Ratio
+                      <span class="range-value" id="boreratio-value">3.3</span>
+                    </label>
+                    <input
+                      type="range"
+                      id="boreratio"
+                      name="boreratio"
+                      min="2.54"
+                      max="3.94"
+                      step="0.01"
+                      value="3.3"
+                      class="form-control range-input"
+                    />
+                  </div>
+
+                  <div class="form-group">
+                    <label for="horsepower">
+                      Horsepower
+                      <span class="range-value" id="horsepower-value">150</span>
+                    </label>
+                    <input
+                      type="range"
+                      id="horsepower"
+                      name="horsepower"
+                      min="48"
+                      max="262"
+                      step="1"
+                      value="150"
+                      class="form-control range-input"
+                    />
+                  </div>
+                </div>
+
+                <!-- Second Column: 8 Inputs (City MPG moved here) -->
+                <div>
+                  <div class="form-group">
+                    <label for="citympg">
+                      City MPG
+                      <span class="range-value" id="citympg-value">25</span>
+                    </label>
+                    <input
+                      type="range"
+                      id="citympg"
+                      name="citympg"
+                      min="13"
+                      max="49"
+                      step="1"
+                      value="25"
+                      class="form-control range-input"
+                    />
+                  </div>
+
+                  <div class="form-group">
+                    <label for="highwaympg">
+                      Highway MPG
+                      <span class="range-value" id="highwaympg-value">30</span>
+                    </label>
+                    <input
+                      type="range"
+                      id="highwaympg"
+                      name="highwaympg"
+                      min="16"
+                      max="54"
+                      step="1"
+                      value="30"
+                      class="form-control range-input"
+                    />
+                  </div>
+
+                  <div class="form-group">
+                    <label for="fueltype">Fuel Type</label>
+                    <select id="fueltype" name="fueltype" class="form-control">
+                      <option value="gas">Gas</option>
+                      <option value="diesel">Diesel</option>
+                    </select>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="aspiration">Aspiration</label>
+                    <select
+                      id="aspiration"
+                      name="aspiration"
+                      class="form-control"
+                    >
+                      <option value="std">Standard</option>
+                      <option value="turbo">Turbo</option>
+                    </select>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="carbody">Car Body</label>
+                    <select id="carbody" name="carbody" class="form-control">
+                      <option value="sedan">Sedan</option>
+                      <option value="hatchback">Hatchback</option>
+                      <option value="wagon">Wagon</option>
+                      <option value="hardtop">Hardtop</option>
+                      <option value="convertible">Convertible</option>
+                    </select>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="drivewheel">Drive Wheel</label>
+                    <select
+                      id="drivewheel"
+                      name="drivewheel"
+                      class="form-control"
+                    >
+                      <option value="fwd">Front Wheel Drive</option>
+                      <option value="rwd">Rear Wheel Drive</option>
+                      <option value="4wd">4 Wheel Drive</option>
+                    </select>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="enginetype">Engine Type</label>
+                    <select
+                      id="enginetype"
+                      name="enginetype"
+                      class="form-control"
+                    >
+                      <option value="ohc">OHC</option>
+                      <option value="ohcv">OHCV</option>
+                      <option value="l">L</option>
+                      <option value="rotor">Rotor</option>
+                      <option value="dohc">DOHC</option>
+                      <option value="dohcv">DOHCV</option>
+                    </select>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="cylindernumber">Cylinder Number</label>
+                    <select
+                      id="cylindernumber"
+                      name="cylindernumber"
+                      class="form-control"
+                    >
+                      <option value="four">Four</option>
+                      <option value="six">Six</option>
+                      <option value="five">Five</option>
+                      <option value="eight">Eight</option>
+                      <option value="two">Two</option>
+                      <option value="three">Three</option>
+                      <option value="twelve">Twelve</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Predict Button Spanning Both Columns -->
+                <div class="predict-btn-container">
+                  <button type="submit" class="predict-btn">
+                    <i class="fas fa-magic"></i> Predict Price
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+
+          <div class="welcome-section" id="welcomeSection">
+            <h2><i class="fas fa-robot"></i> Welcome to AI Car Pricing</h2>
+            <p>
+              Experience the power of advanced machine learning to predict car
+              prices with incredible accuracy. Simply configure your car
+              specifications on the left and get instant predictions powered by
+              sophisticated algorithms trained on thousands of vehicle data
+              points.
+            </p>
+
+            <div class="features-grid">
+              <div class="feature-card">
+                <i class="fas fa-brain"></i>
+                <h3>AI-Powered</h3>
+                <p>
+                  Advanced machine learning algorithms analyze multiple vehicle
+                  parameters
+                </p>
+              </div>
+              <div class="feature-card">
+                <i class="fas fa-bolt"></i>
+                <h3>Instant Results</h3>
+                <p>
+                  Get price predictions in seconds with detailed analysis charts
+                </p>
+              </div>
+              <div class="feature-card">
+                <i class="fas fa-chart-line"></i>
+                <h3>Visual Analytics</h3>
+                <p>
+                  Interactive charts and graphs to understand pricing factors
+                </p>
+              </div>
+              <div class="feature-card">
+                <i class="fas fa-bullseye"></i>
+                <h3>High Accuracy</h3>
+                <p>
+                  Trained on comprehensive automotive datasets for reliable
+                  predictions
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="results-section" id="resultsSection">
+            <div class="loading" id="loading">
+              <div class="spinner"></div>
+              <p>Analyzing car specifications...</p>
+            </div>
+
+            <div id="results" style="display: none">
+              <div class="price-result">
+                <div class="price-amount" id="predictedPrice">$0</div>
+                <div class="price-label">Predicted Price</div>
+              </div>
+
+              <div class="specs-summary">
+                <h3 style="margin-bottom: 20px; color: #8b5cf6">
+                  <i class="fas fa-list"></i> Your Car Specifications
+                </h3>
+                <div class="specs-grid" id="specsGrid"></div>
+              </div>
+
+              <div class="charts-grid">
+                <div class="chart-container">
+                  <div id="priceComparisonChart"></div>
+                </div>
+                <div class="chart-container">
+                  <div id="performanceChart"></div>
+                </div>
+                <div class="chart-container">
+                  <div id="radarChart"></div>
+                </div>
+                <div class="chart-container">
+                  <div id="gaugeChart"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+      // Create animated stars background
+      function createStars() {
+        const starsContainer = document.getElementById("stars");
+        const numStars = 100;
+
+        for (let i = 0; i < numStars; i++) {
+          const star = document.createElement("div");
+          star.className = "star";
+          star.style.left = Math.random() * 100 + "%";
+          star.style.top = Math.random() * 100 + "%";
+          star.style.animationDelay = Math.random() * 2 + "s";
+          starsContainer.appendChild(star);
+        }
+      }
+
+      // Update range input values dynamically
+      function updateRangeValues() {
+        const rangeInputs = document.querySelectorAll(".range-input");
+        rangeInputs.forEach((input) => {
+          const valueSpan = document.getElementById(input.id + "-value");
+          if (valueSpan) {
+            valueSpan.textContent = input.value;
+            input.addEventListener("input", function () {
+              valueSpan.textContent = this.value;
+            });
+          }
+        });
+      }
+
+      // Display specifications summary
+      function displaySpecs(specs) {
+        const specsGrid = document.getElementById("specsGrid");
+        specsGrid.innerHTML = "";
+
+        const specLabels = {
+          carname: "Car Name", // Added Car Name label
+          wheelbase: "Wheelbase",
+          carlength: "Car Length",
+          carwidth: "Car Width",
+          carheight: "Car Height",
+          curbweight: "Curb Weight",
+          enginesize: "Engine Size",
+          boreratio: "Bore Ratio",
+          horsepower: "Horsepower",
+          citympg: "City MPG",
+          highwaympg: "Highway MPG",
+          fueltype: "Fuel Type",
+          aspiration: "Aspiration",
+          carbody: "Car Body",
+          drivewheel: "Drive Wheel",
+          enginetype: "Engine Type",
+          cylindernumber: "Cylinders",
+          fueleconomy: "Fuel Economy",
+        };
+
+        for (const [key, value] of Object.entries(specs)) {
+          if (specLabels[key]) {
+            const specItem = document.createElement("div");
+            specItem.className = "spec-item";
+            specItem.innerHTML = `
+              <span class="spec-label">${specLabels[key]}:</span>
+              <span class="spec-value">${value}</span>
+            `;
+            specsGrid.appendChild(specItem);
+          }
+        }
+      }
+
+      // Function to render all Plotly charts
+      function renderCharts(charts) {
+        if (charts.price_comparison) {
+          console.log("Price Comparison Data:", charts.price_comparison.data);
+          const priceComparisonLayout = {
+            ...charts.price_comparison.layout,
+            title: {
+              text: "Price Comparison",
+              font: { size: 10, color: "#ffffff" },
+              x: 0.5,
+              xanchor: "center",
+              y: 0.95,
+              yanchor: "top",
+            },
+            height: 200,
+            width: undefined,
+            margin: { t: 30, b: 30, l: 30, r: 30 },
+            font: { size: 8, color: "#ffffff" },
+            showlegend: true,
+            legend: {
+              font: { size: 8, color: "#ffffff" },
+              x: 1,
+              xanchor: "right",
+              y: 0.5,
+            },
+            paper_bgcolor: "rgba(0,0,0,0)",
+            plot_bgcolor: "rgba(0,0,0,0)",
+            xaxis: { tickfont: { size: 8, color: "#ffffff" } },
+            yaxis: { tickfont: { size: 8, color: "#ffffff" } },
+          };
+          Plotly.newPlot(
+            "priceComparisonChart",
+            charts.price_comparison.data,
+            priceComparisonLayout,
+            {
+              responsive: true,
+              displayModeBar: false,
+            }
+          );
+        }
+
+        if (charts.performance_scatter) {
+          console.log(
+            "Performance Scatter Data:",
+            charts.performance_scatter.data
+          );
+          const performanceLayout = {
+            ...charts.performance_scatter.layout,
+            title: {
+              text: "Performance Scatter",
+              font: { size: 10, color: "#ffffff" },
+              x: 0.5,
+              xanchor: "center",
+              y: 0.95,
+              yanchor: "top",
+            },
+            height: 200,
+            width: undefined,
+            margin: { t: 30, b: 30, l: 30, r: 30 },
+            font: { size: 8, color: "#ffffff" },
+            showlegend: true,
+            legend: {
+              font: { size: 8, color: "#ffffff" },
+              x: 1,
+              xanchor: "right",
+              y: 0.5,
+            },
+            paper_bgcolor: "rgba(0,0,0,0)",
+            plot_bgcolor: "rgba(0,0,0,0)",
+            xaxis: { tickfont: { size: 8, color: "#ffffff" } },
+            yaxis: { tickfont: { size: 8, color: "#ffffff" } },
+          };
+          Plotly.newPlot(
+            "performanceChart",
+            charts.performance_scatter.data,
+            performanceLayout,
+            {
+              responsive: true,
+              displayModeBar: false,
+            }
+          );
+        }
+
+        if (charts.radar) {
+          console.log("Radar Chart Data:", charts.radar.data);
+          const radarLayout = {
+            ...charts.radar.layout,
+            title: {
+              text: "Specs Radar",
+              font: { size: 10, color: "#ffffff" },
+              x: 0.5,
+              xanchor: "center",
+              y: 0.95,
+              yanchor: "top",
+            },
+            height: 200,
+            width: undefined,
+            margin: { t: 30, b: 30, l: 30, r: 30 },
+            font: { size: 8, color: "#ffffff" },
+            showlegend: true,
+            legend: {
+              font: { size: 8, color: "#ffffff" },
+              x: 1,
+              xanchor: "right",
+              y: 0.5,
+            },
+            paper_bgcolor: "rgba(0,0,0,0)",
+            plot_bgcolor: "rgba(0,0,0,0)",
+          };
+          Plotly.newPlot("radarChart", charts.radar.data, radarLayout, {
+            responsive: true,
+            displayModeBar: false,
+          });
+        }
+
+        if (charts.gauge) {
+          console.log("Gauge Chart Data:", charts.gauge.data);
+          const gaugeLayout = {
+            ...charts.gauge.layout,
+            title: {
+              text: "Price Indicator",
+              font: { size: 10, color: "#ffffff" },
+              x: 0.5,
+              xanchor: "center",
+              y: 0.95,
+              yanchor: "top",
+            },
+            height: 200,
+            width: undefined,
+            margin: { t: 30, b: 30, l: 30, r: 30 },
+            font: { size: 8, color: "#ffffff" },
+            showlegend: false,
+            paper_bgcolor: "rgba(0,0,0,0)",
+            plot_bgcolor: "rgba(0,0,0,0)",
+          };
+          Plotly.newPlot("gaugeChart", charts.gauge.data, gaugeLayout, {
+            responsive: true,
+            displayModeBar: false,
+          });
+        }
+      }
+
+      // Form submission handler
+      document
+        .getElementById("predictionForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const form = e.target;
+          const predictBtn = form.querySelector(".predict-btn");
+          const loading = document.getElementById("loading");
+          const results = document.getElementById("results");
+          const resultsSection = document.getElementById("resultsSection");
+          const welcomeSection = document.getElementById("welcomeSection");
+          const formSection = document.getElementById("formSection");
+
+          predictBtn.disabled = true;
+          loading.style.display = "block";
+          results.style.display = "none";
+          welcomeSection.style.display = "none";
+          formSection.style.display = "none";
+          resultsSection.classList.add("full-span");
+
+          try {
+            const formData = new FormData(form);
+            const response = await fetch("/predict", {
+              method: "POST",
+              body: formData,
+            });
+
+            const contentType = response.headers.get("content-type");
+            if (!contentType || !contentType.includes("application/json")) {
+              throw new Error(
+                "Server did not return a JSON response. Please try again."
+              );
+            }
+
+            const data = await response.json();
+            console.log("Response from /predict:", data);
+
+            if (data.error) {
+              throw new Error(data.error);
+            }
+
+            // Update price and specs before showing results
+            document.getElementById(
+              "predictedPrice"
+            ).textContent = `$${data.predicted_price.toLocaleString("en-US", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}`;
+            displaySpecs(data.input_specs);
+
+            // Show the results section and render charts after it's visible
+            results.style.display = "block";
+            resultsSection.style.visibility = "visible";
+
+            // Render charts now that the container is visible
+            if (data.charts) {
+              renderCharts(data.charts);
+            }
+          } catch (error) {
+            console.error("Error:", error);
+            const resultsDiv = document.getElementById("results");
+            resultsDiv.innerHTML = `
+              <div class="error-message">
+                Error: ${
+                  error.message ||
+                  "An unexpected error occurred. Please try again."
+                }
+              </div>
+            `;
+            results.style.display = "block";
+            resultsSection.style.visibility = "visible";
+          } finally {
+            predictBtn.disabled = false;
+            loading.style.display = "none";
+          }
+        });
+
+      // Initialize
+      createStars();
+      updateRangeValues();
+    </script>
+  </body>
+</html>
